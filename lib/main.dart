@@ -528,28 +528,82 @@ class TodayHabitsView extends StatelessWidget {
   }
 }
 
-class NewHabitPage extends StatelessWidget {
+class NewHabitPage extends StatefulWidget {
   const NewHabitPage({super.key, required this.locale});
 
   final Locale locale;
 
   @override
-  Widget build(BuildContext context) {
-    final strings = AppStrings(locale);
-    final bool isEnglish = locale.languageCode == 'en';
+  State<NewHabitPage> createState() => _NewHabitPageState();
+}
 
-    final List<_PredefinedHabit> popularHabits = [
-      _PredefinedHabit('🚶‍♂️', isEnglish ? 'Walk' : 'Đi bộ'),
-      _PredefinedHabit('🛏️', isEnglish ? 'Sleep' : 'Ngủ đủ giấc'),
-      _PredefinedHabit('💧', isEnglish ? 'Drink water' : 'Uống nước'),
-      _PredefinedHabit('🧘‍♀️', isEnglish ? 'Meditation' : 'Thiền định'),
-      _PredefinedHabit('🏃‍♂️', isEnglish ? 'Run' : 'Chạy bộ'),
-      _PredefinedHabit('🧍‍♂️', isEnglish ? 'Stand' : 'Đứng vận động nhẹ'),
-      _PredefinedHabit('🚴‍♀️', isEnglish ? 'Cycling' : 'Đạp xe'),
-      _PredefinedHabit('💪', isEnglish ? 'Workout' : 'Tập luyện'),
-      _PredefinedHabit('🔥', isEnglish ? 'Active Calorie' : 'Đốt calo'),
-      _PredefinedHabit('🔥', isEnglish ? 'Burn Calorie' : 'Tiêu hao calo'),
+enum _HabitCategory { hot, health, exercise, home, time, other }
+
+class _NewHabitPageState extends State<NewHabitPage> {
+  _HabitCategory _selectedCategory = _HabitCategory.hot;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings(widget.locale);
+    final bool isEnglish = widget.locale.languageCode == 'en';
+
+    final List<_PredefinedHabit> allHabits = [
+      _PredefinedHabit(
+        '🚶‍♂️',
+        isEnglish ? 'Walk' : 'Đi bộ',
+        _HabitCategory.exercise,
+      ),
+      _PredefinedHabit(
+        '🛏️',
+        isEnglish ? 'Sleep' : 'Ngủ đủ giấc',
+        _HabitCategory.health,
+      ),
+      _PredefinedHabit(
+        '💧',
+        isEnglish ? 'Drink water' : 'Uống nước',
+        _HabitCategory.health,
+      ),
+      _PredefinedHabit(
+        '🧘‍♀️',
+        isEnglish ? 'Meditation' : 'Thiền định',
+        _HabitCategory.health,
+      ),
+      _PredefinedHabit(
+        '🏃‍♂️',
+        isEnglish ? 'Run' : 'Chạy bộ',
+        _HabitCategory.exercise,
+      ),
+      _PredefinedHabit(
+        '🧍‍♂️',
+        isEnglish ? 'Stand' : 'Đứng vận động nhẹ',
+        _HabitCategory.exercise,
+      ),
+      _PredefinedHabit(
+        '🚴‍♀️',
+        isEnglish ? 'Cycling' : 'Đạp xe',
+        _HabitCategory.exercise,
+      ),
+      _PredefinedHabit(
+        '💪',
+        isEnglish ? 'Workout' : 'Tập luyện',
+        _HabitCategory.exercise,
+      ),
+      _PredefinedHabit(
+        '🔥',
+        isEnglish ? 'Active Calorie' : 'Đốt calo',
+        _HabitCategory.other,
+      ),
+      _PredefinedHabit(
+        '🔥',
+        isEnglish ? 'Burn Calorie' : 'Tiêu hao calo',
+        _HabitCategory.other,
+      ),
     ];
+
+    final List<_PredefinedHabit> popularHabits =
+        _selectedCategory == _HabitCategory.hot
+        ? allHabits
+        : allHabits.where((h) => h.category == _selectedCategory).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -568,24 +622,66 @@ class NewHabitPage extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _CategoryChip(icon: Icons.local_fire_department, label: 'Hot'),
+                _CategoryChip(
+                  icon: Icons.local_fire_department,
+                  label: 'Hot',
+                  selected: _selectedCategory == _HabitCategory.hot,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = _HabitCategory.hot;
+                    });
+                  },
+                ),
                 _CategoryChip(
                   icon: Icons.favorite,
                   label: strings.categoryHealth,
+                  selected: _selectedCategory == _HabitCategory.health,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = _HabitCategory.health;
+                    });
+                  },
                 ),
                 _CategoryChip(
                   icon: Icons.directions_run,
                   label: strings.categoryExercise,
+                  selected: _selectedCategory == _HabitCategory.exercise,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = _HabitCategory.exercise;
+                    });
+                  },
                 ),
                 _CategoryChip(
                   icon: Icons.home_outlined,
                   label: strings.categoryHome,
+                  selected: _selectedCategory == _HabitCategory.home,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = _HabitCategory.home;
+                    });
+                  },
                 ),
                 _CategoryChip(
                   icon: Icons.access_time,
                   label: strings.categoryTime,
+                  selected: _selectedCategory == _HabitCategory.time,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = _HabitCategory.time;
+                    });
+                  },
                 ),
-                _CategoryChip(icon: Icons.block, label: strings.categoryOther),
+                _CategoryChip(
+                  icon: Icons.block,
+                  label: strings.categoryOther,
+                  selected: _selectedCategory == _HabitCategory.other,
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = _HabitCategory.other;
+                    });
+                  },
+                ),
               ],
             ),
           ),
@@ -716,48 +812,69 @@ class NewHabitPage extends StatelessWidget {
 }
 
 class _PredefinedHabit {
-  _PredefinedHabit(this.emoji, this.label);
+  _PredefinedHabit(this.emoji, this.label, this.category);
 
   final String emoji;
   final String label;
+  final _HabitCategory category;
 }
 
 class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({required this.icon, required this.label});
+  const _CategoryChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0),
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+    final Color activeColor = const Color(0xFFFF6B81);
+    final Color circleColor = selected ? Colors.white : Colors.white;
+    final List<BoxShadow> shadows = [
+      BoxShadow(
+        color: Colors.black.withOpacity(selected ? 0.08 : 0.03),
+        blurRadius: selected ? 14 : 10,
+        offset: const Offset(0, 4),
+      ),
+    ];
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+        child: Column(
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: circleColor,
+                shape: BoxShape.circle,
+                boxShadow: shadows,
+                border: selected
+                    ? Border.all(color: activeColor, width: 2)
+                    : null,
+              ),
+              child: Icon(
+                icon,
+                color: selected ? activeColor : const Color(0xFFFF6B81),
+              ),
             ),
-            child: Icon(icon, color: const Color(0xFFFF6B81)),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
-          ),
-        ],
+            const SizedBox(height: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: selected ? activeColor : Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1079,14 +1196,20 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
                             },
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: !_isBuildType
+                                    ? const Color(0xFF6D8BFF)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
                               alignment: Alignment.center,
                               child: Text(
                                 strings.detailHabitTypeQuit,
                                 style: TextStyle(
                                   color: !_isBuildType
-                                      ? Colors.black87
-                                      : Colors.black45,
-                                  fontWeight: FontWeight.w500,
+                                      ? Colors.white
+                                      : Colors.black54,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
@@ -1219,6 +1342,46 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
               ),
             ),
           ],
+        ),
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(strings.cancel),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF6D8BFF),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(strings.save),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
