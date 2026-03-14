@@ -995,6 +995,8 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
   Color _habitColor = const Color(0xFF6D8BFF);
   int _goalValue = 10000;
   Set<int> _taskDays = {1, 2, 3, 4, 5, 6, 7}; // 1=Mon..7=Sun
+  DateTime _startDate = DateTime.now();
+  DateTime? _endDate; // null = no end
 
   Future<void> _pickReminderTime(BuildContext context) async {
     final picked = await showTimePicker(
@@ -1173,6 +1175,40 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
     });
   }
 
+  Future<void> _pickStartDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _startDate,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked != null) {
+      setState(() {
+        _startDate = picked;
+        if (_endDate != null && _endDate!.isBefore(_startDate)) {
+          _endDate = _startDate;
+        }
+      });
+    }
+  }
+
+  Future<void> _pickEndDate(BuildContext context) async {
+    final now = DateTime.now();
+    final initial = _endDate ?? _startDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: _startDate,
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked != null) {
+      setState(() {
+        _endDate = picked;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings(widget.locale);
@@ -1196,6 +1232,18 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
           .join(', ');
       taskDaysText = labels;
     }
+
+    String formatDate(DateTime date) {
+      final y = date.year.toString().padLeft(4, '0');
+      final m = date.month.toString().padLeft(2, '0');
+      final d = date.day.toString().padLeft(2, '0');
+      return '$y-$m-$d';
+    }
+
+    final startDateText = formatDate(_startDate);
+    final endDateText = _endDate != null
+        ? formatDate(_endDate!)
+        : (isEnglish ? 'No End' : 'Không kết thúc');
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FF),
@@ -1359,6 +1407,74 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
                         ),
                       ],
                     ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _DetailCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.detailHabitTerm,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            strings.detailStartDateLabel,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 6),
+                          GestureDetector(
+                            onTap: () => _pickStartDate(context),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE7ECFF),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Text(startDateText),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            strings.detailEndDateLabel,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 6),
+                          GestureDetector(
+                            onTap: () => _pickEndDate(context),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE7ECFF),
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              child: Text(endDateText),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1754,6 +1870,12 @@ class AppStrings {
   String get detailReminders => _isEnglish ? 'Reminders' : 'Nhắc nhở';
 
   String get detailTime => _isEnglish ? 'Time' : 'Thời gian';
+
+  String get detailHabitTerm => _isEnglish ? 'Habit Term' : 'Thời gian áp dụng';
+
+  String get detailStartDateLabel => _isEnglish ? 'Start Date' : 'Ngày bắt đầu';
+
+  String get detailEndDateLabel => _isEnglish ? 'End Date' : 'Ngày kết thúc';
 
   String get swipeToDelete => _isEnglish
       ? 'Swipe left to remove this habit.'
