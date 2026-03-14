@@ -116,9 +116,19 @@ class _HabitHomePageState extends State<HabitHomePage> {
     );
 
     if (result != null && result.trim().isNotEmpty) {
-      setState(() {
-        _habits.add(Habit(id: _nextHabitId++, name: result.trim()));
-      });
+      // Sau khi chọn tên thói quen, chuyển sang màn chi tiết.
+      final confirmed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) =>
+              HabitDetailPage(locale: widget.locale, habitName: result.trim()),
+        ),
+      );
+
+      if (confirmed == true) {
+        setState(() {
+          _habits.add(Habit(id: _nextHabitId++, name: result.trim()));
+        });
+      }
     }
   }
 
@@ -983,6 +993,8 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
   bool _remindersOn = false;
   TimeOfDay _reminderTime = const TimeOfDay(hour: 19, minute: 30);
   Color _habitColor = const Color(0xFF6D8BFF);
+  int _goalValue = 10000;
+  Set<int> _taskDays = {1, 2, 3, 4, 5, 6, 7}; // 1=Mon..7=Sun
 
   Future<void> _pickReminderTime(BuildContext context) async {
     final picked = await showTimePicker(
@@ -1046,6 +1058,121 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
     }
   }
 
+  String _weekdayShortLabel(int weekday, bool isEnglish) {
+    // weekday: 1=Mon..7=Sun
+    if (isEnglish) {
+      const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return labels[(weekday - 1).clamp(0, 6)];
+    } else {
+      const labels = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+      return labels[(weekday - 1).clamp(0, 6)];
+    }
+  }
+
+  Future<void> _editGoalValue(BuildContext context) async {
+    final controller = TextEditingController(text: _goalValue.toString());
+
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (context) {
+        final strings = AppStrings(widget.locale);
+        return AlertDialog(
+          title: Text(strings.detailGoalValue),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: widget.locale.languageCode == 'en'
+                  ? 'Enter number of steps'
+                  : 'Nhập số bước',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: Text(strings.cancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop(controller.text.trim());
+              },
+              child: Text(strings.save),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == null || result.isEmpty) return;
+
+    final parsed = int.tryParse(result);
+    if (parsed == null || parsed <= 0) return;
+
+    setState(() {
+      _goalValue = parsed;
+    });
+  }
+
+  Future<void> _editTaskDays(BuildContext context) async {
+    final isEnglish = widget.locale.languageCode == 'en';
+    final current = Set<int>.from(_taskDays);
+
+    final result = await showDialog<Set<int>>(
+      context: context,
+      builder: (context) {
+        final strings = AppStrings(widget.locale);
+        return AlertDialog(
+          title: Text(strings.detailTaskDays),
+          content: StatefulBuilder(
+            builder: (context, setStateDialog) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(7, (index) {
+                  final weekday = index + 1; // 1-7
+                  final label = _weekdayShortLabel(weekday, isEnglish);
+                  final checked = current.contains(weekday);
+                  return CheckboxListTile(
+                    value: checked,
+                    dense: true,
+                    title: Text(label),
+                    onChanged: (value) {
+                      setStateDialog(() {
+                        if (value == true) {
+                          current.add(weekday);
+                        } else {
+                          current.remove(weekday);
+                        }
+                      });
+                    },
+                  );
+                }),
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: Text(strings.cancel),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop(current);
+              },
+              child: Text(strings.save),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == null || result.isEmpty) return;
+
+    setState(() {
+      _taskDays = result;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings(widget.locale);
@@ -1054,6 +1181,21 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
     final timeRanges = isEnglish
         ? ['Anytime', 'Morning', 'Afternoon', 'Evening']
         : ['Bất kỳ', 'Buổi sáng', 'Buổi chiều', 'Buổi tối'];
+
+    final goalValueText = isEnglish
+        ? '$_goalValue steps / day'
+        : '$_goalValue bước / ngày';
+
+    String taskDaysText;
+    if (_taskDays.length == 7) {
+      taskDaysText = strings.detailTaskDaysValue;
+    } else {
+      final sortedDays = _taskDays.toList()..sort();
+      final labels = sortedDays
+          .map((d) => _weekdayShortLabel(d, isEnglish))
+          .join(', ');
+      taskDaysText = labels;
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FF),
@@ -1241,16 +1383,19 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(strings.detailGoalValue),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 6,
+                      GestureDetector(
+                        onTap: () => _editGoalValue(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE7ECFF),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Text(goalValueText),
                         ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE7ECFF),
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: Text('10000 steps / day'),
                       ),
                     ],
                   ),
@@ -1259,7 +1404,20 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(strings.detailTaskDays),
-                      Text(strings.detailTaskDaysValue),
+                      GestureDetector(
+                        onTap: () => _editTaskDays(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE7ECFF),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Text(taskDaysText),
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -1359,7 +1517,7 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(false);
                   },
                   child: Text(strings.cancel),
                 ),
@@ -1375,7 +1533,7 @@ class _HabitDetailPageState extends State<HabitDetailPage> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.of(context).pop();
+                    Navigator.of(context).pop(true);
                   },
                   child: Text(strings.save),
                 ),
@@ -1577,9 +1735,9 @@ class AppStrings {
 
   String get detailHabitType => _isEnglish ? 'Habit Type' : 'Loại thói quen';
 
-  String get detailHabitTypeBuild => _isEnglish ? 'Build' : 'Xây dựng';
+  String get detailHabitTypeBuild => _isEnglish ? 'Build' : 'Nên';
 
-  String get detailHabitTypeQuit => _isEnglish ? 'Quit' : 'Từ bỏ';
+  String get detailHabitTypeQuit => _isEnglish ? 'Quit' : 'Không nên';
 
   String get detailGoalPeriod => _isEnglish ? 'Goal Period' : 'Khoảng mục tiêu';
 
