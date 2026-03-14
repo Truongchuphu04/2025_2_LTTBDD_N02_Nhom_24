@@ -188,7 +188,31 @@ class _HabitHomePageState extends State<HabitHomePage> {
     String title;
 
     if (_selectedIndex == 0) {
-      title = strings.todayTitle;
+      final d = _selectedDate;
+      final isEnglish = widget.locale.languageCode == 'en';
+      const viWeekdays = [
+        'Thứ hai',
+        'Thứ ba',
+        'Thứ tư',
+        'Thứ năm',
+        'Thứ sáu',
+        'Thứ bảy',
+        'Chủ nhật',
+      ];
+      const enWeekdays = [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ];
+      final weekdayName = (isEnglish
+          ? enWeekdays
+          : viWeekdays)[(d.weekday - 1) % 7];
+      final dateText = '${d.day}/${d.month}';
+      title = '$weekdayName, $dateText';
       body = TodayHabitsView(
         locale: widget.locale,
         habits: _habits,
@@ -211,6 +235,7 @@ class _HabitHomePageState extends State<HabitHomePage> {
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: Text(title),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         actions: [
