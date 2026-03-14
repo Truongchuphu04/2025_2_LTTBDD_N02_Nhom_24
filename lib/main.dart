@@ -815,22 +815,437 @@ class AllHabitsView extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.primary.withOpacity(0.1),
-                child: Icon(
-                  Icons.flag,
-                  color: Theme.of(context).colorScheme.primary,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        HabitDetailPage(locale: locale, habitName: habit.name),
+                  ),
+                );
+              },
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.1),
+                  child: Icon(
+                    Icons.flag,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                 ),
+                title: Text(habit.name),
+                subtitle: Text(strings.swipeToDelete),
               ),
-              title: Text(habit.name),
-              subtitle: Text(strings.swipeToDelete),
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class HabitDetailPage extends StatefulWidget {
+  const HabitDetailPage({
+    super.key,
+    required this.locale,
+    required this.habitName,
+  });
+
+  final Locale locale;
+  final String habitName;
+
+  @override
+  State<HabitDetailPage> createState() => _HabitDetailPageState();
+}
+
+class _HabitDetailPageState extends State<HabitDetailPage> {
+  bool _isBuildType = true;
+  int _timeRangeIndex = 0; // 0: Anytime, 1: Morning, 2: Afternoon, 3: Evening
+  bool _remindersOn = false;
+  TimeOfDay _reminderTime = const TimeOfDay(hour: 19, minute: 30);
+  Color _habitColor = const Color(0xFF6D8BFF);
+
+  Future<void> _pickReminderTime(BuildContext context) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime,
+    );
+    if (picked != null) {
+      setState(() {
+        _reminderTime = picked;
+        _remindersOn = true;
+      });
+    }
+  }
+
+  Future<void> _pickColor(BuildContext context) async {
+    final colors = <Color>[
+      const Color(0xFF6D8BFF),
+      const Color(0xFFFF6B81),
+      const Color(0xFF4CAF50),
+      const Color(0xFFFFB74D),
+      const Color(0xFF9C27B0),
+    ];
+
+    final result = await showModalBottomSheet<Color>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: colors.map((color) {
+              final selected = color.value == _habitColor.value;
+              return GestureDetector(
+                onTap: () => Navigator.of(context).pop(color),
+                child: Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    border: selected
+                        ? Border.all(color: Colors.black26, width: 2)
+                        : null,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+
+    if (result != null) {
+      setState(() {
+        _habitColor = result;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings(widget.locale);
+    final isEnglish = widget.locale.languageCode == 'en';
+
+    final timeRanges = isEnglish
+        ? ['Anytime', 'Morning', 'Afternoon', 'Evening']
+        : ['Bất kỳ', 'Buổi sáng', 'Buổi chiều', 'Buổi tối'];
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF4F7FF),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🚶‍♂️', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 6),
+            Text(widget.habitName),
+          ],
+        ),
+        foregroundColor: Colors.black87,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _DetailCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFCED8FF)),
+                        ),
+                        child: const Center(
+                          child: Text('🚶‍♂️', style: TextStyle(fontSize: 24)),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.habitName,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              strings.detailDescriptionHint,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: Colors.grey[500]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(strings.detailColor),
+                    onTap: () => _pickColor(context),
+                    trailing: Container(
+                      width: 56,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: _habitColor,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(strings.detailGroup),
+                    trailing: Text(
+                      strings.detailOptional,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _DetailCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.detailHabitType,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7ECFF),
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isBuildType = true;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                color: _isBuildType
+                                    ? const Color(0xFF6D8BFF)
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                strings.detailHabitTypeBuild,
+                                style: TextStyle(
+                                  color: _isBuildType
+                                      ? Colors.white
+                                      : Colors.black54,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isBuildType = false;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              alignment: Alignment.center,
+                              child: Text(
+                                strings.detailHabitTypeQuit,
+                                style: TextStyle(
+                                  color: !_isBuildType
+                                      ? Colors.black87
+                                      : Colors.black45,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _DetailCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        strings.detailGoalPeriod,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(strings.detailGoalPeriodValue),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(strings.detailGoalValue),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE7ECFF),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Text('10000 steps / day'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(strings.detailTaskDays),
+                      Text(strings.detailTaskDaysValue),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _DetailCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    strings.detailTimeRange,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: List.generate(timeRanges.length, (index) {
+                      final bool selected = index == _timeRangeIndex;
+                      return ChoiceChip(
+                        label: Text(timeRanges[index]),
+                        selected: selected,
+                        onSelected: (_) {
+                          setState(() {
+                            _timeRangeIndex = index;
+                          });
+                        },
+                        selectedColor: const Color(0xFF6D8BFF),
+                        labelStyle: TextStyle(
+                          color: selected ? Colors.white : Colors.black87,
+                        ),
+                        backgroundColor: const Color(0xFFE7ECFF),
+                      );
+                    }),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            _DetailCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        strings.detailReminders,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Switch(
+                        value: _remindersOn,
+                        onChanged: (value) {
+                          setState(() {
+                            _remindersOn = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(strings.detailTime),
+                    onTap: () => _pickReminderTime(context),
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE7ECFF),
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: Text(_reminderTime.format(context)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DetailCard extends StatelessWidget {
+  const _DetailCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 }
@@ -986,6 +1401,38 @@ class AppStrings {
   String get categoryTime => _isEnglish ? 'Time' : 'Thời gian';
 
   String get categoryOther => _isEnglish ? 'Other' : 'Khác';
+
+  // Detail page strings
+  String get detailDescriptionHint =>
+      _isEnglish ? 'Description (optional)' : 'Mô tả (không bắt buộc)';
+
+  String get detailColor => _isEnglish ? 'Color' : 'Màu sắc';
+
+  String get detailGroup => _isEnglish ? 'Group' : 'Nhóm';
+
+  String get detailOptional => _isEnglish ? 'Optional' : 'Không bắt buộc';
+
+  String get detailHabitType => _isEnglish ? 'Habit Type' : 'Loại thói quen';
+
+  String get detailHabitTypeBuild => _isEnglish ? 'Build' : 'Xây dựng';
+
+  String get detailHabitTypeQuit => _isEnglish ? 'Quit' : 'Từ bỏ';
+
+  String get detailGoalPeriod => _isEnglish ? 'Goal Period' : 'Khoảng mục tiêu';
+
+  String get detailGoalPeriodValue => _isEnglish ? 'Day-long' : 'Cả ngày';
+
+  String get detailGoalValue => _isEnglish ? 'Goal Value' : 'Giá trị mục tiêu';
+
+  String get detailTaskDays => _isEnglish ? 'Task Days' : 'Ngày thực hiện';
+
+  String get detailTaskDaysValue => _isEnglish ? 'Every day' : 'Mỗi ngày';
+
+  String get detailTimeRange => _isEnglish ? 'Time Range' : 'Khoảng thời gian';
+
+  String get detailReminders => _isEnglish ? 'Reminders' : 'Nhắc nhở';
+
+  String get detailTime => _isEnglish ? 'Time' : 'Thời gian';
 
   String get swipeToDelete => _isEnglish
       ? 'Swipe left to remove this habit.'
