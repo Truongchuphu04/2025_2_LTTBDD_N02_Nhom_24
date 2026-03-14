@@ -109,35 +109,10 @@ class _HabitHomePageState extends State<HabitHomePage> {
   }
 
   Future<void> _addHabit() async {
-    final strings = AppStrings(widget.locale);
-    final controller = TextEditingController();
-
-    final result = await showDialog<String?>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(strings.addHabitTitle),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(labelText: strings.habitNameLabel),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(null),
-              child: Text(strings.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                final text = controller.text.trim();
-                if (text.isEmpty) return;
-                Navigator.of(context).pop(text);
-              },
-              child: Text(strings.save),
-            ),
-          ],
-        );
-      },
+    final result = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (context) => NewHabitPage(locale: widget.locale),
+      ),
     );
 
     if (result != null && result.trim().isNotEmpty) {
@@ -553,6 +528,241 @@ class TodayHabitsView extends StatelessWidget {
   }
 }
 
+class NewHabitPage extends StatelessWidget {
+  const NewHabitPage({super.key, required this.locale});
+
+  final Locale locale;
+
+  @override
+  Widget build(BuildContext context) {
+    final strings = AppStrings(locale);
+    final bool isEnglish = locale.languageCode == 'en';
+
+    final List<_PredefinedHabit> popularHabits = [
+      _PredefinedHabit('🚶‍♂️', isEnglish ? 'Walk' : 'Đi bộ'),
+      _PredefinedHabit('🛏️', isEnglish ? 'Sleep' : 'Ngủ đủ giấc'),
+      _PredefinedHabit('💧', isEnglish ? 'Drink water' : 'Uống nước'),
+      _PredefinedHabit('🧘‍♀️', isEnglish ? 'Meditation' : 'Thiền định'),
+      _PredefinedHabit('🏃‍♂️', isEnglish ? 'Run' : 'Chạy bộ'),
+      _PredefinedHabit('🧍‍♂️', isEnglish ? 'Stand' : 'Đứng vận động nhẹ'),
+      _PredefinedHabit('🚴‍♀️', isEnglish ? 'Cycling' : 'Đạp xe'),
+      _PredefinedHabit('💪', isEnglish ? 'Workout' : 'Tập luyện'),
+      _PredefinedHabit('🔥', isEnglish ? 'Active Calorie' : 'Đốt calo'),
+      _PredefinedHabit('🔥', isEnglish ? 'Burn Calorie' : 'Tiêu hao calo'),
+    ];
+
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        title: Text(strings.newHabitTitle),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        foregroundColor: Colors.black87,
+        elevation: 0,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _CategoryChip(icon: Icons.local_fire_department, label: 'Hot'),
+                _CategoryChip(
+                  icon: Icons.favorite,
+                  label: strings.categoryHealth,
+                ),
+                _CategoryChip(
+                  icon: Icons.directions_run,
+                  label: strings.categoryExercise,
+                ),
+                _CategoryChip(
+                  icon: Icons.home_outlined,
+                  label: strings.categoryHome,
+                ),
+                _CategoryChip(
+                  icon: Icons.access_time,
+                  label: strings.categoryTime,
+                ),
+                _CategoryChip(icon: Icons.block, label: strings.categoryOther),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            strings.popularHabitsTitle,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            strings.popularHabitsSubtitle,
+            textAlign: TextAlign.center,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              itemCount: popularHabits.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final item = popularHabits[index];
+                return GestureDetector(
+                  onTap: () => Navigator.of(context).pop(item.label),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.03),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Text(item.emoji, style: const TextStyle(fontSize: 24)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            item.label,
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.favorite_border,
+                            color: Color(0xFFFF6B81),
+                          ),
+                          onPressed: () {},
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add, color: Color(0xFFFF6B81)),
+                          onPressed: () =>
+                              Navigator.of(context).pop(item.label),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(32, 8, 32, 24),
+            child: SizedBox(
+              height: 48,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF6B81),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+                onPressed: () async {
+                  final controller = TextEditingController();
+                  final result = await showDialog<String?>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        title: Text(strings.addHabitTitle),
+                        content: TextField(
+                          controller: controller,
+                          autofocus: true,
+                          decoration: InputDecoration(
+                            labelText: strings.habitNameLabel,
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(null),
+                            child: Text(strings.cancel),
+                          ),
+                          FilledButton(
+                            onPressed: () {
+                              final text = controller.text.trim();
+                              if (text.isEmpty) return;
+                              Navigator.of(context).pop(text);
+                            },
+                            child: Text(strings.save),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+
+                  if (result != null && result.trim().isNotEmpty) {
+                    Navigator.of(context).pop(result.trim());
+                  }
+                },
+                child: Text(strings.customHabitButtonLabel),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PredefinedHabit {
+  _PredefinedHabit(this.emoji, this.label);
+
+  final String emoji;
+  final String label;
+}
+
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: const Color(0xFFFF6B81)),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class AllHabitsView extends StatelessWidget {
   const AllHabitsView({
     super.key,
@@ -756,6 +966,26 @@ class AppStrings {
   String get save => _isEnglish ? 'Save' : 'Lưu';
 
   String get addHabitTooltip => _isEnglish ? 'Add habit' : 'Thêm thói quen';
+
+  String get newHabitTitle => _isEnglish ? 'New Habit' : 'Thói quen mới';
+
+  String get popularHabitsTitle => _isEnglish ? 'Popular' : 'Phổ biến';
+
+  String get popularHabitsSubtitle =>
+      _isEnglish ? 'Most popular habits' : 'Những thói quen phổ biến nhất';
+
+  String get customHabitButtonLabel =>
+      _isEnglish ? 'Custom Habit' : 'Tự tạo thói quen';
+
+  String get categoryHealth => _isEnglish ? 'Health' : 'Sức khoẻ';
+
+  String get categoryExercise => _isEnglish ? 'Exercise' : 'Vận động';
+
+  String get categoryHome => _isEnglish ? 'Home' : 'Ở nhà';
+
+  String get categoryTime => _isEnglish ? 'Time' : 'Thời gian';
+
+  String get categoryOther => _isEnglish ? 'Other' : 'Khác';
 
   String get swipeToDelete => _isEnglish
       ? 'Swipe left to remove this habit.'
